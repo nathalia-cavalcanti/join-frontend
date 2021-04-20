@@ -99,7 +99,7 @@ incrementIngredientes (button) {
     if(button.matches('.toggle')) {
         this.toggleButton(button, qtdIngredientes);
     } else {
-        [...button.parentNode.children].filter(e => {
+        [...button.parentNode.children].forEach(e => {
             if(e.matches('.increment')) {
                 increment = e;
             }
