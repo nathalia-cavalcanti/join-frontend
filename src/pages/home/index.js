@@ -29,6 +29,11 @@ class Home extends Component {
                         vl_item: 0
                     }] 
                 }]
+        },
+        
+        itens: {
+            notificacaoQtd: 0, 
+            itemValue: []
         }
     };
 
@@ -38,57 +43,83 @@ async UNSAFE_componentWillMount() {
 
 async getProduct() {
     const product = await api.get('test-frontend/products')
-    console.log(product);
     this.setState({produto:product.data[0]});
 }
 
 hideTooltip () {
     const tooltip = document.querySelector('#tooltip');
-    if(tooltip.style.display = 'inline-block') {
-        tooltip.style.display = 'none';
+    tooltip.style.display = 'none';
+}
+
+async estadoIngredientes() {
+    const notificacaoQtd = document.querySelector('.notificacao__qtd').value;
+    const toggle = Array.from(document.querySelectorAll('.toggle'));
+    const item = Array.from(document.querySelectorAll("#item"));
+    
+    const itemValue = item.map(i => {
+        return parseInt(i.value);
+    });
+
+    const itens = {notificacaoQtd, itemValue};
+    await this.setState({itens:itens});
+
+    toggle.forEach(b => {
+        if(b.value==1) {
+            this.toggleButton(b);
+        }
+    });
+}
+
+limitarIngredientes() {
+    let qtdIngredientes = 0;
+    const item = Array.from(document.querySelectorAll("#item"));
+    item.forEach(i => {
+        qtdIngredientes += parseInt(i.value);
+    })
+    return qtdIngredientes;
+}
+
+toggleButton (button, qtdIngredientes) {
+    if (button.value == 1) {
+        button.className = '';
+        button.className = ('button-plus toggle');
+        button.value = 0;
+    } else if (button.value == 0 && qtdIngredientes<8) {
+        button.className = '';
+        button.className = ('button-remove toggle');
+        button.value = 1;
     }
 }
 
 incrementIngredientes (button) {
     let increment;
     let limitar = true;
-    let qtdIngredientes = this.limitarIngredientes();
+    const qtdIngredientes = this.limitarIngredientes();
 
-    [...button.parentNode.children].filter(e => {
-        if(e.matches('.increment')) {
-            increment = e;
-        }
-        if(e.matches('.increment-option')) {
-            limitar = qtdIngredientes<8;
-        }
-    });
+    if(button.matches('.toggle')) {
+        this.toggleButton(button, qtdIngredientes);
+    } else {
+        [...button.parentNode.children].filter(e => {
+            if(e.matches('.increment')) {
+                increment = e;
+            }
+            if(e.matches('#item')) {
+                limitar = qtdIngredientes<8;
+            }
+        });
 
-    if(limitar && increment && button.matches('.button-plus')) {
-        increment.value = parseInt(increment.value) + 1;
-    } else if(increment && button.matches('.button-remove') && increment.value>0) {
-        increment.value = parseInt(increment.value) - 1;
+        if(limitar && button.matches('.button-plus')) {
+            increment.value = parseInt(increment.value) + 1;
+        } else if(increment.value>0 && button.matches('.button-remove')) {
+            increment.value = parseInt(increment.value) - 1;
+        }
     }
 }
 
-limitarIngredientes() {
-    let totalIngredientes = document.querySelectorAll('.button-increment');
-    let qtdIngredientes = 0;
-    totalIngredientes.forEach(i => {
-        
-        [...i.children].filter(e => {
-            if(e.matches('.increment-option')) {
-                qtdIngredientes += parseInt(e.value);
-            }
-        });
-    })
-    return qtdIngredientes;
-}
-
-
 adicionarPedido () {
-    let qtdPedido = parseInt(document.querySelector('#qtd-pedido').value);
-    let notificacao = document.querySelector('.notificacao');
-    let notificacaoQtd = document.querySelector('.notificacao__qtd');
+    const qtdPedido = parseInt(document.querySelector('#qtd-pedido').value);
+    const notificacao = document.querySelector('.notificacao');
+    const notificacaoQtd = document.querySelector('.notificacao__qtd');
 
     const carrinho = document.querySelector('#icon-carrinho');
     const tooltip = document.querySelector('#tooltip');
@@ -97,6 +128,7 @@ adicionarPedido () {
         notificacaoQtd.value = parseInt(notificacaoQtd.value) + qtdPedido;
         notificacao.style.display = 'flex';
         tooltip.style.display = 'inline-block';
+        this.estadoIngredientes();
     }
 
     createPopper(carrinho, tooltip, {
@@ -121,7 +153,7 @@ adicionarPedido () {
             </a>
 
             <div className="header__logo">
-                <a href="index.html"><img id="img-logo" src={Deliverize} alt="" /></a>
+                <a href="#"><img id="img-logo" src={Deliverize} alt="" /></a>
             </div>
 
             <div className="header__endereco">
@@ -141,7 +173,7 @@ adicionarPedido () {
             </div>
             <div className="header__carrinho" onClick={() => this.hideTooltip()}>
                 <span className="icon-carrinho">
-                    <div className="notificacao"><input className="notificacao__qtd" value='0' readOnly /></div>
+                    <div className="notificacao"><input className="notificacao__qtd" value={this.state.itens.notificacaoQtd} readOnly /></div>
                     <img id="icon-carrinho" src={IconCarrinho} alt="" aria-describedby="tooltip"/>
                 </span>
                 <div id="tooltip" role="tooltip">
@@ -150,13 +182,13 @@ adicionarPedido () {
                     </div>
                     <div className="popup-body">
                         <div style={{marginBottom: '8px', fontSize: '14px', lineHeight: '100%', color: '#BC2E31', fontWeight: 'bold'}}>
-                        Oferta Cheddar Bacon
+                        {this.state.produto.nm_product}
                         </div>
                         <div className ="popup-ingredientes">
                             Ingredientes:
                         <ul style={{padding: '0 16px', margin: '0'}}>
                             <li>1 carne 250g</li>
-                            <li>2 queijo cheddar</li>
+                            <li className={this.state.itens.itemValue[0]==0 ? 'hide' : ''}>{this.state.itens.itemValue[0]} {this.state.produto.ingredients[0].itens[0].nm_item}</li>
                             <li>1 Bacon</li>
                             <li>Molho Especial</li>
                         </ul>
@@ -201,7 +233,7 @@ adicionarPedido () {
                             <div className="produto__form-option--add">
                                 <div className="button-increment">
                                     <button className="button-remove" onClick={(e) => this.incrementIngredientes(e.target)}></button>
-                                    <input className="increment increment-option" type="number" value="0" min="0" readOnly />
+                                    <input id="item" className="increment" type="number" value='0' min="0" readOnly />
                                     <button className="button-plus" onClick={(e) => this.incrementIngredientes(e.target)}></button>
                                 </div>
                             </div>
@@ -212,7 +244,7 @@ adicionarPedido () {
                         <div className="produto__form-option">
                             <p>{this.state.produto.ingredients[0].itens[1].nm_item}</p>
                             <div className="produto__form-option--add">
-                                <button className="button-plus"></button>
+                                <button id="item" value='0' className="button-plus toggle" onClick={(e) => this.incrementIngredientes(e.target)}></button>
                             </div>
                             <p className="option-price">+ {formatCurrency(this.state.produto.ingredients[0].itens[1].vl_item)}</p>
                         </div>
@@ -221,7 +253,7 @@ adicionarPedido () {
                         <div className="produto__form-option">
                             <p>{this.state.produto.ingredients[0].itens[2].nm_item}</p>
                             <div className="produto__form-option--add">
-                                <button className="button-plus"></button>
+                                <button id="item" value='0' className="button-plus toggle" onClick={(e) => this.incrementIngredientes(e.target)}></button>
                             </div>
                             <p className="option-price">+ {formatCurrency(this.state.produto.ingredients[0].itens[2].vl_item)}</p>
                         </div>
@@ -232,7 +264,7 @@ adicionarPedido () {
                             <div className="produto__form-option--add">
                                 <div className="button-increment">
                                     <button className="button-remove" onClick={(e) => this.incrementIngredientes(e.target)}></button>
-                                    <input className="increment increment-option" type="number" value="0" min="0" readOnly />
+                                    <input id="item" className="increment" type="number" value='0' min="0" readOnly />
                                     <button className="button-plus" onClick={(e) => this.incrementIngredientes(e.target)}></button>
                                 </div>
                             </div>
@@ -259,7 +291,7 @@ adicionarPedido () {
                         <div className="produto__form-footer">
                             <div className="button-increment button-increment--footer">
                                 <button className="button-remove button-remove--footer" onClick={(e) => this.incrementIngredientes(e.target)}></button>
-                                <input id="qtd-pedido" className="increment" type="number" value="0" min="0" readOnly />
+                                <input id="qtd-pedido" className="increment" type="number" value='0' min="0" readOnly />
                                 <button className="button-plus button-plus--footer" onClick={(e) => this.incrementIngredientes(e.target)}></button>
                             </div>
                             <button className="button-adicionar" onClick={()=>this.adicionarPedido()}>Adicionar</button>
