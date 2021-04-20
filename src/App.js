@@ -1,4 +1,10 @@
-import logo from './logo.svg';
+// import React from "react";
+import Routes from "./routes";
+import './App.css';
+
+const App = () => <Routes />;
+
+/* import logo from './logo.svg';
 import './App.css';
 
 function App() {
@@ -20,6 +26,6 @@ function App() {
       </header>
     </div>
   );
-}
+} */
 
 export default App;
